@@ -7,22 +7,29 @@
 
 #include <Arduino.h>
 
+#include <NTPClient.h>
+
 #include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
+
 #include <ESP8266WiFiMulti.h>
 #include <WebSocketsServer.h>
 #include <Hash.h>
 
 ESP8266WiFiMulti WiFiMulti;
 
-#include <time.h>
-
-#include <ESP8266HTTPClient.h>
+//#include <time.h>
+//#include <ESP8266HTTPClient.h>
 
 #include "LedWrite.h"
 #define USE_SERIAL Serial
 
-const long utcOffsetInSeconds = 3600;
+const long utcOffsetInSeconds = 0;
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+// Define NTP Client to get time
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds);
+
 
 const int LED_DATA_PIN = 2;
 WebSocketsServer webSocket = WebSocketsServer(81);
@@ -331,6 +338,7 @@ void setup()
     while(WiFiMulti.run() != WL_CONNECTED) {
         delay(100);
     }
+    timeClient.begin();
 
     USE_SERIAL.println("");
     USE_SERIAL.print("Connected to ");
@@ -353,30 +361,32 @@ void setup()
 }
 
 //**************************************************************************************************************************************************************
-void setClock() {
+//void setClock() {
+//
+//  configTime(2400, 0, "pool.ntp.org", "time.nist.gov");
+//  Serial.print("Waiting for NTP time sync: ");
+//  time_t now = time(nullptr);
+//  while (now < 8 * 3600 * 2) {
+//    delay(500);
+//    Serial.print(".");
+//    now = time(nullptr);
+//  }
+//  Serial.println("");
+//  struct tm timeinfo;
+//  gmtime_r(&now, &timeinfo);
+//  Serial.print("Current time: ");
+//  Serial.print(asctime(&timeinfo));
+//
+//  //Serial.println("Hour: " + timeinfo.hour);
+//  
+//  Serial.println(String(now));
+//}
 
-  configTime(2400, 0, "pool.ntp.org", "time.nist.gov");
-  Serial.print("Waiting for NTP time sync: ");
-  time_t now = time(nullptr);
-  while (now < 8 * 3600 * 2) {
-    delay(500);
-    Serial.print(".");
-    now = time(nullptr);
-  }
-  Serial.println("");
-  struct tm timeinfo;
-  gmtime_r(&now, &timeinfo);
-  Serial.print("Current time: ");
-  Serial.print(asctime(&timeinfo));
-
-  
-  Serial.println(String(now));
-}
 
 //******************************************************************************************************************************************************************8
 void doTime()
 {
-  setClock();
+     //setClock();
     // WiFiClient client;
 //    HTTPClient http; //Object of class HTTPClient
 //    //http.begin("http://worldclockapi.com/api/json/utc/now/");
@@ -421,17 +431,17 @@ void doTime()
     //}
     //http.end();
     
-    //timeClient.update();
-//    USE_SERIAL.print(daysOfTheWeek[timeClient.getDay()]);
-//    USE_SERIAL.print(", ");
-//    USE_SERIAL.print(timeClient.getHours());
-//    USE_SERIAL.print(":");
-//    USE_SERIAL.print(timeClient.getMinutes());
-//    USE_SERIAL.print(":");
-//    USE_SERIAL.println(timeClient.getSeconds());
+    timeClient.update();
+    USE_SERIAL.print(daysOfTheWeek[timeClient.getDay()]);
+    USE_SERIAL.print(", ");
+    USE_SERIAL.print(timeClient.getHours());
+    USE_SERIAL.print(":");
+    USE_SERIAL.print(timeClient.getMinutes());
+    USE_SERIAL.print(":");
+    USE_SERIAL.println(timeClient.getSeconds());
 }
 
-void  loop ()                                           // keep this loop lean //
+void loop ()   // keep this loop lean //
 {
   webSocket.loop();// service the websocket
 
