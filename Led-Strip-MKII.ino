@@ -3,7 +3,7 @@
    MKV  has no webserver on it    11/12/2020
 
 */
-
+//some extra information
 
 #include <Arduino.h>
 
@@ -63,6 +63,7 @@ bool SET_FLAG = false;
 
 // it is possible to access the LED data array
 //RGB* led = leds.led;
+
 RGB* color = leds.getColor();
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -342,7 +343,7 @@ void setup()
     webSocket.onEvent(webSocketEvent);
   
     clientCount = 0;
-    leds.setColor(color[indigo]);
+    leds.setColor(color[none]);
   
     SET_FLAG = true;
     leds.dimColors();

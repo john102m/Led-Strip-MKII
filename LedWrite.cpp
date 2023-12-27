@@ -8,16 +8,13 @@ Released into the public domain
 
 #include "LedWrite.h"
 
-//namespace LedWrite{
+//some information
 
 LedWrite::LedWrite(int pin)
 {
     _pin = pin;
     angle = 0;
-
 }
-
-
 
 /*
 * @param BRG data
