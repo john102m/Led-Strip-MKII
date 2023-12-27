@@ -1,14 +1,12 @@
 /*
-LedWrite.cpp - Library for sending bursts of 24bits to a ESP8266- 01
+LedWrite.cpp - for sending bursts of 24bits from ESP8266-01
 to RGB LED 5050 strips of length 5M = 50 groups of 3 LEDs
-point to note:  the LED strip likes BRG bits but I talk in RGB bits
+The LED strip likes BRG bits but I talk in RGB bits
 Created By John McKinney December 14 2020
 Released into the public domain
 */
 
 #include "LedWrite.h"
-
-//some information
 
 LedWrite::LedWrite(int pin)
 {
@@ -20,7 +18,7 @@ LedWrite::LedWrite(int pin)
 * @param BRG data
 *
 *      24 bits of BRG   eg 0xFA0BE    MASK MSB then shift 24 bits << left etc etc
- */
+*/
 
 void LedWrite::sendData(RGB data)
 {

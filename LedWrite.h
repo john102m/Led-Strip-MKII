@@ -47,8 +47,8 @@ class LedWrite
 
 
 	private:
-		// all these values only work on an 160MHz esp8266-01
-		// on barbaras laptop  with Arduino Version 1.8.3
+		// Tested on ESP8266-01 @ 160MHz 
+		// Arduino Version 1.8.xx
 		// const int longPulseTicks = 24; const int LOWlongPulseTicks = 20;
 		// int shortPulseTicks = 2;
 		// int HIshortPulseTicks = 1;
@@ -86,16 +86,15 @@ class LedWrite
     void sendBRGdata(unsigned int RGBdata);
     int getBRG(RGB led);
 
-	void shiftLEDSup();
-	void shiftLEDSdown();
-	float triFn(float angle, float phase);
-	int LEDchase = 1;
+  	void shiftLEDSup();
+  	void shiftLEDSdown();
+  	float triFn(float angle, float phase);
+  	int LEDchase = 1;
 
-	//count is used internally used by swipe and snowfall (gets incremented every time they are invoked)
-	int count = 0;
-	// used by phasing method to calculate a brightness from a triangle wave whos phase is shifted by this angle
-	int angle = 0;
-
+  	//count is used internally used by swipe and snowfall (gets incremented every time they are invoked)
+  	int count = 0;
+  	// used by phasing method to calculate a brightness from a triangle wave whos phase is shifted by this angle
+  	int angle = 0;
 
 };
 #endif
