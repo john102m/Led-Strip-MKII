@@ -3,32 +3,23 @@
    MKV  has no webserver on it    11/12/2020
 
 */
-//some extra information
-
-#include <Arduino.h>
-
 #include <NTPClient.h>
-
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
 
-#include <ESP8266WiFiMulti.h>
 #include <WebSocketsServer.h>
-#include <Hash.h>
 
-ESP8266WiFiMulti WiFiMulti;
-
-//#include <time.h>
 //#include <ESP8266HTTPClient.h>
 
 #include "LedWrite.h"
 #define USE_SERIAL Serial
 
-const long utcOffsetInSeconds = 0;
+const long utcOffsetInSeconds = 3600;
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 // Define NTP Client to get time
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds);
+//NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds);
+NTPClient timeClient(ntpUDP);
 
 
 const int LED_DATA_PIN = 2;
@@ -36,9 +27,10 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 LedWrite leds = LedWrite(LED_DATA_PIN);
 int COLOR_COUNT = leds.colorCount;
 
-IPAddress ip(192, 168, 1, 221 ); // where xx is the desired IP Address
+IPAddress ip(192, 168, 1, 220); // where xx is the desired IP Address
 IPAddress gateway(192, 168, 1, 1); // set gateway to match your network
 IPAddress subnet(255, 255, 255, 0); // set subnet mask
+IPAddress dns(1, 1, 1, 1);
 
 const char *ssid = "BT-6XCPXM";
 const char *password = "e4nYhm4u9ecU4v";
@@ -54,7 +46,7 @@ bool RANDOM_MODE = false;
 
 byte clientCount = 0;
 bool CN_Flag = false;  // this flag is set on new websocket connection
-int SELECTED_MODE = 0; //  selection of current sequence  (start on  white colour changing )
+int SELECTED_MODE; //  selection of current sequence  (start on  white colour changing )
 
 /*
    randColor1  and  randColor2  these globals store 2 colours
@@ -71,6 +63,7 @@ bool SET_FLAG = false;
 // it is possible to access the LED data array
 //RGB* led = leds.led;
 
+//this is a pointer to an array
 RGB* color = leds.getColor();
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -86,11 +79,11 @@ void getTextData(String text)
 
     MODE_CHANGE = true;
 
-    int button = text.substring(1).toInt();            // button number pressed
+    int btnNumber = text.substring(1).toInt();            // button number pressed
 
     //USE_SERIAL.print("Data: " + text + "\n");
     
-    switch (button)
+    switch (btnNumber)
     {
       case 7:        
           SELECTED_MODE -= 1;
@@ -127,7 +120,7 @@ void getTextData(String text)
           break;
         
       default:       
-          SELECTED_MODE = button;
+          SELECTED_MODE = btnNumber;
 
     }
     String modeString = "Mode: " + String(SELECTED_MODE);
@@ -142,14 +135,14 @@ void getTextData(String text)
 void doConnectedThings(uint8_t num)
 {
   IPAddress ip = webSocket.remoteIP(num);
-  PLAY_FLAG = true;
+  //PLAY_FLAG = true;
 
   USE_SERIAL.printf("[%u] Connected from %d.%d.%d.%d \n", num, ip[0], ip[1], ip[2], ip[3]);
   CN_Flag = true;
   clientCount = num;
 
   leds.setColor(color[indigo]);
-  SELECTED_MODE = 0;
+  SELECTED_MODE = 9;
   SET_FLAG = true;
 }
 //==========================================================================================================================================
@@ -166,7 +159,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       break;
 
     case WStype_TEXT:
-      getTextData( ((char *)&payload[0]) );
+      getTextData( (char *)&payload[0] );
       break;
 
     case WStype_BIN:
@@ -230,6 +223,10 @@ void doSequence()    //  using choice GLOBAL variable  this updates or advances 
     case 18: 
       leds.swipe(color[randColor1], color[randColor2]);
       break;
+      
+    default:
+      leds.setColor(color[none]);
+        
   }
   SET_FLAG = true;
 }
@@ -306,6 +303,10 @@ void setSequence()   //  uses the above modes
     case 18:  //swipe
       randColor1 = random(7); randColor2 = random(7);
       break;
+    case 19:
+      leds.setColor(color[none]);
+      break;
+      
   }
 }
 
@@ -320,25 +321,32 @@ void PINsetup()
 //**************************************************************************************************************************************************************
 void setup() 
 {
-    USE_SERIAL.begin(115200);
+    USE_SERIAL.begin(115200, SERIAL_8N1, SERIAL_TX_ONLY);
+    PINsetup();
     USE_SERIAL.setDebugOutput(true);
 
     USE_SERIAL.println();
     USE_SERIAL.println();
     USE_SERIAL.println();
 
-    for(uint8_t t = 4; t > 0; t--) {
+    for(uint8_t t = 4; t > 0; t--) 
+    {
         USE_SERIAL.printf("[SETUP] BOOT WAIT %d...\n", t);
         USE_SERIAL.flush();
         delay(1000);
     }
-    //WiFi.config(ip, gateway, subnet);
-    WiFiMulti.addAP(ssid, password);
+    //WiFi.config(ip, gateway, subnet, dns);
+    WiFi.begin(ssid, password);
+    //WiFi.config(ip);
+    //WiFiMulti.addAP(ssid, password);
 
-    while(WiFiMulti.run() != WL_CONNECTED) {
+    //while(WiFiMulti.run() != WL_CONNECTED) 
+    while ( WiFi.status() != WL_CONNECTED ) 
+    {
         delay(100);
+        Serial.print(".");
     }
-    timeClient.begin();
+    
 
     USE_SERIAL.println("");
     USE_SERIAL.print("Connected to ");
@@ -358,29 +366,9 @@ void setup()
   
     prevMillis = millis();  
     timeMillis = millis();
-}
 
-//**************************************************************************************************************************************************************
-//void setClock() {
-//
-//  configTime(2400, 0, "pool.ntp.org", "time.nist.gov");
-//  Serial.print("Waiting for NTP time sync: ");
-//  time_t now = time(nullptr);
-//  while (now < 8 * 3600 * 2) {
-//    delay(500);
-//    Serial.print(".");
-//    now = time(nullptr);
-//  }
-//  Serial.println("");
-//  struct tm timeinfo;
-//  gmtime_r(&now, &timeinfo);
-//  Serial.print("Current time: ");
-//  Serial.print(asctime(&timeinfo));
-//
-//  //Serial.println("Hour: " + timeinfo.hour);
-//  
-//  Serial.println(String(now));
-//}
+    timeClient.begin();
+}
 
 
 //******************************************************************************************************************************************************************8
@@ -388,14 +376,16 @@ void doTime()
 {
      //setClock();
     // WiFiClient client;
-//    HTTPClient http; //Object of class HTTPClient
+    //HTTPClient http; //Object of class HTTPClient
 //    //http.begin("http://worldclockapi.com/api/json/utc/now/");
 //    http.begin("https://jsonplaceholder.typicode.com/users/1/" , "7a 9c f4 db 40 d3 62 5a 6e 21 bc 5c cc 66 c8 3e a1 45 59 38");
 //    //http.addHeader("Content-Type", "application/json");
-
-    
-    //while(!http.connected()) USE_SERIAL.println(" not connected");
-    
+//http.begin("https://jsonplaceholder.typicode.com/users/1/" 
+    //http.setInsecure();
+    //http.connect("https://jsonplaceholder.typicode.com/users/1/");
+//    http.begin("https://jsonplaceholder.typicode.com/users/1/", 443);
+//    //while(!http.connected()) USE_SERIAL.println(" not connected");
+//    
 //    int httpCode = http.GET();
 //
 //    // httpCode will be negative on error
@@ -432,20 +422,48 @@ void doTime()
     //http.end();
     
     timeClient.update();
-    USE_SERIAL.print(daysOfTheWeek[timeClient.getDay()]);
-    USE_SERIAL.print(", ");
-    USE_SERIAL.print(timeClient.getHours());
-    USE_SERIAL.print(":");
-    USE_SERIAL.print(timeClient.getMinutes());
-    USE_SERIAL.print(":");
-    USE_SERIAL.println(timeClient.getSeconds());
+
+    String timeStr = timeClient.getFormattedTime();
+    
+    Serial.println(timeStr);
+//    Serial.println(timeStr.substring(0, 2));
+//    Serial.println(timeStr.substring(3, 5));
+//    Serial.println(timeStr.substring(6, 8));
+
+    uint8_t minute = timeStr.substring(3, 5).toInt();
+    uint8_t second = timeStr.substring(6, 8).toInt();  
+    
+    if(second % 10 == 0 && SELECTED_MODE != 0)
+    {
+        Serial.println("Divisible by 10");       
+        getTextData("B19");
+        webSocket.broadcastTXT("Lights off at: " + timeStr);
+        PLAY_FLAG = false;
+    } 
+    else if(second % 5 == 0)
+    {
+        Serial.println("Divisible by 5");
+        getTextData("B9");
+        webSocket.broadcastTXT("Mode 9 at: " + timeStr); 
+        PLAY_FLAG = true;        
+    }  
+
+
+    
+//    USE_SERIAL.print(daysOfTheWeek[timeClient.getDay()]);
+//    USE_SERIAL.print(", ");
+//    USE_SERIAL.print(timeClient.getHours());
+//    USE_SERIAL.print(":");
+//    USE_SERIAL.print(timeClient.getMinutes());
+//    USE_SERIAL.print(":");
+//    USE_SERIAL.println(timeClient.getSeconds());
 }
 
-void loop ()   // keep this loop lean //
+void loop () 
 {
   webSocket.loop();// service the websocket
 
-  if (millis() > timeMillis + 10000)   // 1000 = one second
+  if (millis() > timeMillis + 1000)   // 1000 = one second
   {
     timeMillis = millis();
     doTime();
