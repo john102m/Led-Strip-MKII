@@ -66,7 +66,10 @@ class LedWrite
 
 		// the pin on which to output data on the ESP8266-01
 		int _pin;
-		RGB led[50];
+    static const int LED_COUNT = 49;
+
+		RGB led[LED_COUNT];
+   
 		RGB color[colorCount] = 
 		{
 			{0x80, 0x00, 0x00},   // red

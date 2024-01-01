@@ -50,7 +50,7 @@ void LedWrite::fillRandom()
     }
 
     int count = 0;                           // iterate through colours, filling the LED array
-    for (int i = 0; i < 50; i++)
+    for (int i = 0; i < LED_COUNT; i++)
     {
         led[i] = randColors[count++];
         if (count >= randNum) count = 0;
@@ -60,7 +60,7 @@ void LedWrite::fillRandom()
 //******************************************************************************************************************************************************************
 void LedWrite::setColor(RGB col)
 {
-    for (int i = 0; i < 50; i++)    // send color info to 50 leds
+    for (int i = 0; i < LED_COUNT; i++)    // send color info to 50 leds
     {
         led[i] = col;
     }
@@ -68,7 +68,7 @@ void LedWrite::setColor(RGB col)
 //******************************************************************************************************************************************************************
 void LedWrite::fillAlternate(int Mod, RGB A, RGB B)
 {
-    for (int i = 0; i < 50; i++)
+    for (int i = 0; i < LED_COUNT; i++)
     {
         if (!(i % Mod)) {
             led[i] = A;
@@ -99,7 +99,7 @@ float LedWrite::triFn(float angle, float phase)    //    returns a float between
 void LedWrite::wave(int randColor1)
 {
     float freq = random(1, 5) * 7.2;                    //  approx 360 divided by 50
-    for (int i = 0; i < 50; i++)
+    for (int i = 0; i < LED_COUNT; i++)
     {
         int bright = triFn(freq * i, pi / 2) * 100;
         led[i] = dimLED(bright, color[randColor1]);
@@ -113,7 +113,7 @@ void LedWrite::phasing(RGB col1, RGB col2)                    // every alternate
     int bright1 = triFn(angle, 0) * 100;                // make an approx triangle with 3rd order harmonic
     int bright2 = triFn(angle, pi / 2) * 100;           // 45 degree  phase shift used for every alternate LED
     //                                                   // so brighness modulation is out of phase with the previous LED
-    for (int i = 0; i < 50; i++)
+    for (int i = 0; i < LED_COUNT; i++)
     {
         if (i % 2)
             led[i] = dimLED(bright1, col1);                  // dimLED returns a percentage brightness of the colour supplied
@@ -128,7 +128,7 @@ void LedWrite::phasing(RGB col1, RGB col2)                    // every alternate
 void LedWrite::fillRainbow()
 {
     int count = 0;                           // iterate through primary colours, filling the LED array
-    for (int i = 0; i < 50; i++)
+    for (int i = 0; i < LED_COUNT; i++)
     {
         led[i] = color[count++];
         if (count > 6) count = 0;
@@ -137,8 +137,8 @@ void LedWrite::fillRainbow()
 
 //******************************************************************************************************************************************************************
 void LedWrite::shiftLEDSup() {
-    RGB temp = led[49];
-    for (int i = 49; i > 0; i--)
+    RGB temp = led[LED_COUNT - 1];
+    for (int i = (LED_COUNT - 1); i > 0; i--)
     {
         led[i] = led[i - 1];
     }
@@ -153,11 +153,11 @@ void LedWrite::shift(bool dir)
 //******************************************************************************************************************************************************************
 void LedWrite::shiftLEDSdown() {
     RGB temp = led[0];
-    for (int i = 0; i < 49; i++)
+    for (int i = 0; i < (LED_COUNT - 1); i++)
     {
         led[i] = led[i + 1];
     }
-    led[49] = temp;
+    led[LED_COUNT - 1] = temp;
 }
 
 ////////////////////////////////////////
@@ -193,8 +193,8 @@ void LedWrite::chaseEffect(int dir, int randColor1)
 {
     led[LEDchase] = color[randColor1];
     LEDchase += dir;
-    if (LEDchase > 49) LEDchase = 0;
-    if (LEDchase < 0)  LEDchase = 49;
+    if (LEDchase > LED_COUNT - 1) LEDchase = 0;
+    if (LEDchase < 0)  LEDchase = LED_COUNT - 1;
 }
 
 
@@ -208,12 +208,12 @@ void LedWrite::chaseEffect(int dir, int randColor1)
 //******************************************************************************************************************************************************************
 void LedWrite::swipe(RGB colA, RGB colB)
 {
-    for (int i = 0; i < 50; i++)
+    for (int i = 0; i < LED_COUNT; i++)
     {
         if (i < count) led[i] = colA;
         else led[i] = colB;
     }
-    if (++count > 49)
+    if (++count > (LED_COUNT - 1))
     {
         count = 0;
         RGB temp;
@@ -228,7 +228,7 @@ void LedWrite::swipe(RGB colA, RGB colB)
 //******************************************************************************************************************************************************************
 void LedWrite::snowfall(byte mod)
 {
-    for (int i = 0; i < 50; i++)
+    for (int i = 0; i < LED_COUNT; i++)
     {
         led[i] = color[none];
         if (i == (18 - count))
@@ -251,9 +251,9 @@ void LedWrite::snowfall(byte mod)
 void LedWrite::twinkle(RGB tcol, RGB bcol)     //   modes 12 and 13
 {
     //if (randColor1 == randColor2) bcol = color[none];
-    int randNum = random(50);
+    int randNum = random(LED_COUNT);
 
-    for (int i = 0; i < 50; i++)
+    for (int i = 0; i < LED_COUNT; i++)
     {
         if ((i >= randNum - spread) && (i <= randNum + spread))
             led[i] = tcol;           // set a random LED a color against a paler background
@@ -266,7 +266,7 @@ void LedWrite::twinkle(RGB tcol, RGB bcol)     //   modes 12 and 13
 void LedWrite::refresh()         
 {
     noInterrupts();
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < LED_COUNT; i++) {
 
         sendData(led[i]); //0x040F0F  back color white ish
 

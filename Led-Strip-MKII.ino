@@ -3,6 +3,7 @@
    MKV  has no webserver on it    11/12/2020
 
 */
+
 #include <NTPClient.h>
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
@@ -38,7 +39,7 @@ const char *password = "e4nYhm4u9ecU4v";
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int prevMillis; 
 int timeMillis; 
-int DELAY_MILLISECONDS = 1000;
+int DELAY_MILLISECONDS = 400;
 int MODE_SET_COUNTER = 0;
 bool MODE_CHANGE = false; 
 bool SHUFFLE_MODE = false;
@@ -65,6 +66,14 @@ bool SET_FLAG = false;
 
 //this is a pointer to an array
 RGB* color = leds.getColor();
+
+struct EventType {
+  char *name;
+  char *time;
+};
+
+EventType Event[9];  
+
 
 //////////////////////////////////////////////////////////////////////////////////
 //  this method is called when there is text from the web socket connection   ////
@@ -141,9 +150,10 @@ void doConnectedThings(uint8_t num)
   CN_Flag = true;
   clientCount = num;
 
-  leds.setColor(color[indigo]);
-  SELECTED_MODE = 9;
+  //leds.setColor(color[indigo]);
+  //SELECTED_MODE = 9;
   SET_FLAG = true;
+  
 }
 //==========================================================================================================================================
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
@@ -152,6 +162,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
   {
     case WStype_DISCONNECTED:
       USE_SERIAL.printf("[%u] Disconnected!\n", num);
+      CN_Flag = false;
       break;
 
     case WStype_CONNECTED:
@@ -159,7 +170,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       break;
 
     case WStype_TEXT:
-      getTextData( (char *)&payload[0] );
+      getTextData((char *)&payload[0]);
       break;
 
     case WStype_BIN:
@@ -172,8 +183,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 void doSequence()    //  using choice GLOBAL variable  this updates or advances the current sequence
 {
 
-  switch (SELECTED_MODE) {
-
+  switch (SELECTED_MODE) 
+  {
     case 0: 
       leds.colorChange(color[white]);
       break;
@@ -224,6 +235,7 @@ void doSequence()    //  using choice GLOBAL variable  this updates or advances 
       leds.swipe(color[randColor1], color[randColor2]);
       break;
       
+    case 19: 
     default:
       leds.setColor(color[none]);
         
@@ -345,8 +357,7 @@ void setup()
     {
         delay(100);
         Serial.print(".");
-    }
-    
+    }  
 
     USE_SERIAL.println("");
     USE_SERIAL.print("Connected to ");
@@ -368,102 +379,100 @@ void setup()
     timeMillis = millis();
 
     timeClient.begin();
+
+    setEvents();
+ 
 }
 
+void setEvents()
+{
+    Event[0].name = "off";
+    Event[0].time = "00:00";
+
+    Event[1].name = "mode 0";
+    Event[1].time = "08:00";
+
+    Event[2].name = "mode 9";
+    Event[2].time = "17:00";
+
+    Event[3].name = "off";
+    Event[3].time = "17:05";
+
+    Event[4].name = "mode 0";
+    Event[4].time = "17:10";
+    
+    ////////////  test events
+    Event[5].name = "mode 11";
+    Event[5].time = "21:30";
+    
+    Event[6].name = "mode 9";
+    Event[6].time = "21:25";
+    
+    Event[7].name = "off";
+    Event[7].time = "21:40";
+    
+    Event[8].name = "mode 0";
+    Event[8].time = "21:55";
+}
 
 //******************************************************************************************************************************************************************8
 void doTime()
 {
-     //setClock();
-    // WiFiClient client;
-    //HTTPClient http; //Object of class HTTPClient
-//    //http.begin("http://worldclockapi.com/api/json/utc/now/");
-//    http.begin("https://jsonplaceholder.typicode.com/users/1/" , "7a 9c f4 db 40 d3 62 5a 6e 21 bc 5c cc 66 c8 3e a1 45 59 38");
-//    //http.addHeader("Content-Type", "application/json");
-//http.begin("https://jsonplaceholder.typicode.com/users/1/" 
-    //http.setInsecure();
-    //http.connect("https://jsonplaceholder.typicode.com/users/1/");
-//    http.begin("https://jsonplaceholder.typicode.com/users/1/", 443);
-//    //while(!http.connected()) USE_SERIAL.println(" not connected");
-//    
-//    int httpCode = http.GET();
-//
-//    // httpCode will be negative on error
-//    if(httpCode > 0) 
-//    {
-//        // HTTP header has been send and Server response header has been handled
-//        USE_SERIAL.printf("[HTTP] GET... code: %d\n", httpCode);
-//
-//        // file found at server
-//        if(httpCode == HTTP_CODE_OK) 
-//        {
-//            String payload = http.getString();
-//            USE_SERIAL.println(payload);
-//        }
-//    } 
-//    else 
-//    {
-//        USE_SERIAL.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
-//    }
-//
-//    http.end();
-
-//    if (httpCode > 0) 
-//    {
-//      const size_t bufferSize = JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + 370;
-//      DynamicJsonBuffer jsonBuffer(bufferSize);
-//      JsonObject& root = jsonBuffer.parseObject(http.getString());
-//      USE_SERIAL.println(http.getString());
-//    }
-//    else
-//    {
-      //USE_SERIAL.println(http.getString());
-    //}
-    //http.end();
-    
-    timeClient.update();
-
-    String timeStr = timeClient.getFormattedTime();
-    
-    Serial.println(timeStr);
-//    Serial.println(timeStr.substring(0, 2));
-//    Serial.println(timeStr.substring(3, 5));
-//    Serial.println(timeStr.substring(6, 8));
-
-    uint8_t minute = timeStr.substring(3, 5).toInt();
-    uint8_t second = timeStr.substring(6, 8).toInt();  
-    
-    if(second % 10 == 0 && SELECTED_MODE != 0)
+  timeClient.update();
+  String timeStr = timeClient.getFormattedTime();
+  Serial.println(timeStr.substring(0, 5)); 
+  webSocket.broadcastTXT("Connected. Mode: " + String(SELECTED_MODE)); 
+  
+  // check for events every minute
+  for (int i = 0; i < 9; i++)
+  {   
+    // event time matches current time
+    if (timeStr.substring(0, 5) == Event[i].time)
     {
-        Serial.println("Divisible by 10");       
-        getTextData("B19");
-        webSocket.broadcastTXT("Lights off at: " + timeStr);
-        PLAY_FLAG = false;
-    } 
-    else if(second % 5 == 0)
-    {
-        Serial.println("Divisible by 5");
-        getTextData("B9");
-        webSocket.broadcastTXT("Mode 9 at: " + timeStr); 
-        PLAY_FLAG = true;        
-    }  
+      Serial.print("Activating event: "), 
+      Serial.print(Event[i].name);
+      Serial.print(" at ");
+      Serial.print(Event[i].time);  
 
-
-    
-//    USE_SERIAL.print(daysOfTheWeek[timeClient.getDay()]);
-//    USE_SERIAL.print(", ");
-//    USE_SERIAL.print(timeClient.getHours());
-//    USE_SERIAL.print(":");
-//    USE_SERIAL.print(timeClient.getMinutes());
-//    USE_SERIAL.print(":");
-//    USE_SERIAL.println(timeClient.getSeconds());
+      // perform event task
+      if (Event[i].name == "off")
+      {
+        lightsOff(timeStr.substring(0, 5));  // pass in hours and minutes
+      }    
+      else
+      {
+        String temp = Event[i].name;
+        setMode(temp.substring(5), timeStr.substring(0, 5));
+                    
+      }                 
+    }     
+  }
 }
 
-void loop () 
+//////////////////////////////////////////////////////////////////////
+void lightsOff(String timeStr)
+{
+  Serial.println(" Lights Off"); 
+  webSocket.broadcastTXT("[Event] Lights off at: " + timeStr);
+  PLAY_FLAG = false;
+  leds.setColor(color[none]);
+  leds.refresh();
+}
+//////////////////////////////////////////////////////////////////////////
+void setMode(String mode, String timeStr)
+{
+  Serial.println(" MODE to set is: " + mode);
+  getTextData("B" + mode);
+  webSocket.broadcastTXT("[Event] Mode " + mode + " set at: " + timeStr); 
+  PLAY_FLAG = true; 
+}
+
+/////////////////////////////////////////////////////////////////////////
+void loop() 
 {
   webSocket.loop();// service the websocket
 
-  if (millis() > timeMillis + 1000)   // 1000 = one second
+  if (millis() > timeMillis + 60000)   // 1000 = one second 60000 = 1 minute
   {
     timeMillis = millis();
     doTime();
